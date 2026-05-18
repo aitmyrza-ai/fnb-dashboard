@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "WebFetch(domain:www.myhalalhibachi.com)",
-      "WebFetch(domain:www.thechopnation.com)"
-    ]
-  }
-}
