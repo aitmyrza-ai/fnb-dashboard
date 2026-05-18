@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard FnB</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -819,17 +820,23 @@
     return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  // ── Sales Tracker ─────────────────────────────────────────────────────────
-  let sales = JSON.parse(localStorage.getItem('biz_sales') || '[]');
-  // Migrate old status values to new names
-  sales = sales.map(s => ({
-    ...s,
-    status: s.status === 'paid' ? 'paid-full' : s.status === 'partial' ? 'deposit-paid' : s.status
-  }));
+  // ── Sales Tracker (Supabase) ──────────────────────────────────────────────
+  const SUPABASE_URL = 'https://rrqlswhmkzhajkxiscla.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_kufFoUa3FlgJrv0NSZQLZw_4FUT7K_3';
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  let sales = [];
 
   document.getElementById('s-date').valueAsDate = new Date();
 
-  function addSale() {
+  async function loadSales() {
+    const { data, error } = await db.from('sales').select('*').order('created_at', { ascending: false });
+    if (error) { console.error('Error loading sales:', error); return; }
+    sales = data;
+    renderSales();
+  }
+
+  async function addSale() {
     const date     = document.getElementById('s-date').value;
     const customer = document.getElementById('s-customer').value.trim();
     const revenue  = parseFloat(document.getElementById('s-revenue').value) || 0;
@@ -837,14 +844,14 @@
     const status   = document.getElementById('s-status').value;
     const notes    = document.getElementById('s-notes').value.trim();
 
-    if (!date)     { alert('Please select a date.'); return; }
-    if (!customer) { alert('Please enter a customer or event name.'); document.getElementById('s-customer').focus(); return; }
+    if (!date)        { alert('Please select a date.'); return; }
+    if (!customer)    { alert('Please enter a customer or event name.'); document.getElementById('s-customer').focus(); return; }
     if (revenue <= 0) { alert('Please enter a revenue amount.'); document.getElementById('s-revenue').focus(); return; }
 
-    sales.unshift({ id: Date.now(), date, customer, revenue, expenses, status, notes });
-    saveSales();
-    renderSales();
+    const { error } = await db.from('sales').insert({ date, customer, revenue, expenses, status, notes });
+    if (error) { alert('Error saving sale. Try again.'); console.error(error); return; }
 
+    await loadSales();
     document.getElementById('s-customer').value = '';
     document.getElementById('s-revenue').value  = '';
     document.getElementById('s-expenses').value = '';
@@ -852,22 +859,18 @@
     document.getElementById('s-customer').focus();
   }
 
-  function updateSaleStatus(id, newStatus) {
-    sales = sales.map(s => s.id === id ? { ...s, status: newStatus } : s);
-    saveSales();
-    renderSales();
+  async function updateSaleStatus(id, newStatus) {
+    await db.from('sales').update({ status: newStatus }).eq('id', id);
+    await loadSales();
   }
 
-  function deleteSale(id) {
+  async function deleteSale(id) {
     if (!confirm('Delete this sale?')) return;
-    sales = sales.filter(s => s.id !== id);
-    saveSales();
-    renderSales();
+    await db.from('sales').delete().eq('id', id);
+    await loadSales();
   }
 
-  function saveSales() {
-    localStorage.setItem('biz_sales', JSON.stringify(sales));
-  }
+  loadSales();
 
   function renderSales() {
     const totalRevenue  = sales.reduce((sum, s) => sum + s.revenue, 0);
@@ -928,7 +931,6 @@
       </table>`;
   }
 
-  renderSales();
 </script>
 
 </body>
