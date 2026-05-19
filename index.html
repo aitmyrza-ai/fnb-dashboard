@@ -15,6 +15,43 @@
       min-height: 100vh;
     }
 
+    /* ── Login Screen ─────────────────────────────────────────────────────── */
+    #login-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+    }
+    .login-card h1 { font-size: 1.3rem; font-weight: 700; margin-bottom: 4px; }
+    .login-card p  { font-size: 0.85rem; color: #888; margin-bottom: 28px; }
+    .login-field   { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+    .login-field label { font-size: 0.78rem; font-weight: 600; color: #555; }
+    .login-error { color: #dc2626; font-size: 0.82rem; margin-bottom: 10px; min-height: 18px; }
+    .btn-login {
+      width: 100%;
+      background: #1a1a2e;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 11px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 6px;
+    }
+    .btn-login:hover { background: #2d2d4e; }
+
+    /* ── Dashboard ────────────────────────────────────────────────────────── */
+    #dashboard { display: none; }
+
     header {
       background: #fff;
       border-bottom: 1px solid #e0e0e0;
@@ -23,8 +60,20 @@
       align-items: center;
       gap: 12px;
     }
-    header h1 { font-size: 1.4rem; font-weight: 700; color: #1a1a2e; }
-    header span { font-size: 1.5rem; }
+    header h1 { font-size: 1.4rem; font-weight: 700; color: #1a1a2e; flex: 1; }
+    header span.icon { font-size: 1.5rem; }
+    .user-info { font-size: 0.8rem; color: #888; margin-right: 12px; }
+    .btn-logout {
+      background: none;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #555;
+      cursor: pointer;
+    }
+    .btn-logout:hover { background: #fee2e2; border-color: #dc2626; color: #dc2626; }
 
     main { max-width: 960px; margin: 0 auto; padding: 28px 16px 60px; }
 
@@ -198,9 +247,32 @@
 </head>
 <body>
 
+<!-- ── Login Screen ──────────────────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-card">
+    <h1>🔥 CHOP NATION</h1>
+    <p>Sign in to access your dashboard</p>
+    <div class="login-field">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="your@email.com" />
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <input type="password" id="login-password" placeholder="••••••••" />
+    </div>
+    <div class="login-error" id="login-error"></div>
+    <button class="btn-login" onclick="signIn()">Sign In</button>
+  </div>
+</div>
+
+<!-- ── Dashboard ─────────────────────────────────────────────────────────── -->
+<div id="dashboard">
+
 <header>
-  <span>🔥</span>
+  <span class="icon">🔥</span>
   <h1>CHOP NATION Dashboard</h1>
+  <span class="user-info" id="user-email"></span>
+  <button class="btn-logout" onclick="signOut()">Sign Out</button>
 </header>
 
 <main>
@@ -338,6 +410,7 @@
   </div>
 
 </main>
+</div>
 
 <script>
   // ── Supabase ───────────────────────────────────────────────────────────────
@@ -345,15 +418,53 @@
   const SUPABASE_KEY = 'sb_publishable_kufFoUa3FlgJrv0NSZQLZw_4FUT7K_3';
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  // ── Init ───────────────────────────────────────────────────────────────────
-  document.getElementById('e-date').valueAsDate = new Date();
-  document.getElementById('t-date').valueAsDate = new Date();
-  document.getElementById('notes').value = localStorage.getItem('biz_notes') || '';
-  document.getElementById('notes').addEventListener('input', function() {
-    localStorage.setItem('biz_notes', this.value);
+  // ── Auth ───────────────────────────────────────────────────────────────────
+  async function signIn() {
+    const email    = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errEl    = document.getElementById('login-error');
+    errEl.textContent = '';
+
+    const { data, error } = await db.auth.signInWithPassword({ email, password });
+    if (error) {
+      errEl.textContent = 'Wrong email or password. Try again.';
+      return;
+    }
+    showDashboard(data.user);
+  }
+
+  async function signOut() {
+    await db.auth.signOut();
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('login-email').value    = '';
+    document.getElementById('login-password').value = '';
+  }
+
+  function showDashboard(user) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display    = 'block';
+    document.getElementById('user-email').textContent     = user.email;
+    initDashboard();
+  }
+
+  // Check if already logged in when page loads
+  db.auth.getSession().then(({ data }) => {
+    if (data.session) {
+      showDashboard(data.session.user);
+    }
   });
 
-  loadAll();
+  // ── Dashboard Init ─────────────────────────────────────────────────────────
+  function initDashboard() {
+    document.getElementById('e-date').valueAsDate = new Date();
+    document.getElementById('t-date').valueAsDate = new Date();
+    document.getElementById('notes').value = localStorage.getItem('biz_notes') || '';
+    document.getElementById('notes').addEventListener('input', function() {
+      localStorage.setItem('biz_notes', this.value);
+    });
+    loadAll();
+  }
 
   async function loadAll() {
     await Promise.all([loadEvents(), loadTruck()]);
