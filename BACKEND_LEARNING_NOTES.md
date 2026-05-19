@@ -1,4 +1,4 @@
-# Backend Learning Notes — CHOP NATION Dashboard
+# Backend Learning Notes — FnB Dashboard
 
 ## 1. What localStorage Was
 
