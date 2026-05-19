@@ -8,7 +8,7 @@ It worked like a sticky note on your specific computer, in your specific browser
 Problems:
 - Close the tab → data was gone (for some things)
 - Open on your phone → nothing there
-- Your brother opens the link → empty screen
+- Your worker opens the link → empty screen
 - Clear your browser → everything deleted
 
 localStorage still exists in this app for the Notes section only.
@@ -18,7 +18,7 @@ localStorage still exists in this app for the Notes section only.
 ## 2. What Supabase Changed
 
 Supabase is a real database living on a server in the cloud.
-When you add a catering event, it doesn't save to your browser — it saves to Supabase.
+When you add an event, it doesn't save to your browser — it saves to Supabase.
 
 What that means:
 - Close the tab → data is still there when you come back
@@ -60,7 +60,7 @@ What auth added:
 
 Users added in Supabase:
 - You (owner) — full access
-- Your brother — full access for now (role restriction comes later)
+- Your manager — full access for now (role restriction comes later)
 
 ---
 
