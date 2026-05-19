@@ -556,11 +556,31 @@
   function initDashboard() {
     document.getElementById('e-date').valueAsDate = new Date();
     document.getElementById('t-date').valueAsDate = new Date();
-    document.getElementById('notes').value = localStorage.getItem('biz_notes') || '';
-    document.getElementById('notes').addEventListener('input', function() {
-      localStorage.setItem('biz_notes', this.value);
-    });
     loadAll();
+    loadNotes();
+
+    let notesSaveTimer;
+    document.getElementById('notes').addEventListener('input', function() {
+      clearTimeout(notesSaveTimer);
+      notesSaveTimer = setTimeout(saveNotes, 1000);
+    });
+  }
+
+  async function loadNotes() {
+    const { data, error } = await db.from('notes').select('*').limit(1).single();
+    if (data) {
+      document.getElementById('notes').value = data.content || '';
+    }
+  }
+
+  async function saveNotes() {
+    const content = document.getElementById('notes').value;
+    const { data } = await db.from('notes').select('id').limit(1).single();
+    if (data) {
+      await db.from('notes').update({ content }).eq('id', data.id);
+    } else {
+      await db.from('notes').insert({ content });
+    }
   }
 
   async function loadAll() {
