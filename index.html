@@ -546,9 +546,7 @@
 
   // Check if already logged in when page loads
   db.auth.getSession().then(({ data }) => {
-    if (data.session && data.session.user.recovery_sent_at) {
-      document.getElementById('newpass-screen').style.display = 'flex';
-    } else if (data.session) {
+    if (data.session) {
       showDashboard(data.session.user);
     } else {
       document.getElementById('login-screen').style.display = 'flex';
